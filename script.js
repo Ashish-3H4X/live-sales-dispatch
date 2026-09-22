@@ -1,7 +1,7 @@
 const CONFIG = {
   API_URL: "https://script.google.com/macros/s/AKfycbw1M5DyohSY0l2AgrXKKX8JdVGUdVIa2EabOTIf1uTkDBeo6qjxbb2LBLlgD6-IxhMg/exec",
-  REFRESH_INTERVAL: 10000,
-  ROWS_PER_PAGE: 20
+  REFRESH_INTERVAL: 20000,
+  ROWS_PER_PAGE: 10
 };
 
 const state = {
@@ -1175,119 +1175,119 @@ function populateFilters() {
 ========================================================= */
 
 async function submitEntry(e) {
-
   e.preventDefault();
 
+  $("formError").textContent = "";
 
-  const f =
-    new FormData(e.target);
+  const formData = new FormData(e.target);
+  const p = Object.fromEntries(formData.entries());
 
-
-  const p =
-    Object.fromEntries(
-      f.entries()
-    );
-
+  p.date = String(p.date || "").trim();
+  p.billNo = String(p.billNo || "").trim();
+  p.salesman = String(p.salesman || "").trim();
+  p.particulars = String(p.particulars || "").trim();
+  p.itemDetails = String(p.itemDetails || "").trim();
+  p.alias = String(p.alias || "").trim();
+  p.materialCentre = String(p.materialCentre || "").trim();
+  p.unit = String(p.unit || "").trim();
 
   p.qty = num(p.qty);
-
   p.price = num(p.price);
 
+  if (!p.date) {
+    $("formError").textContent = "Date is required.";
+    return;
+  }
+
+  if (!p.salesman) {
+    $("formError").textContent = "Salesman is required.";
+    return;
+  }
+
+  if (!p.particulars) {
+    $("formError").textContent = "Particulars / Customer is required.";
+    return;
+  }
+
+  if (!p.itemDetails) {
+    $("formError").textContent = "Item Details is required.";
+    return;
+  }
+
+  if (!p.unit) {
+    $("formError").textContent = "Unit is required.";
+    return;
+  }
 
   if (p.qty <= 0) {
-
-    $("formError").textContent =
-      "Quantity must be greater than zero.";
-
+    $("formError").textContent = "Quantity must be greater than zero.";
     return;
-
   }
 
+  if (p.price < 0) {
+    $("formError").textContent = "Price cannot be negative.";
+    return;
+  }
 
-  if (
-    !CONFIG.API_URL ||
-    CONFIG.API_URL.includes("YOUR_GOOGLE")
-  ) {
-
+  if (!CONFIG.API_URL || CONFIG.API_URL.includes("YOUR_GOOGLE")) {
     $("formError").textContent =
       "Configure the Apps Script URL in script.js.";
-
     return;
-
   }
 
-
   $("submitBtn").disabled = true;
-
-  $("submitBtn").innerHTML =
-    "<span>+</span> Adding...";
-
+  $("submitBtn").innerHTML = "<span>+</span> Adding...";
 
   try {
+    const response = await fetch(CONFIG.API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(p),
+      cache: "no-store"
+    });
 
-    const r =
-      await fetch(
-        CONFIG.API_URL,
-        {
-          method: "POST",
+    const rawText = await response.text();
 
-          headers: {
-            "Content-Type":
-              "text/plain;charset=utf-8"
-          },
+    let result;
 
-          body: JSON.stringify(p)
-        }
+    try {
+      result = JSON.parse(rawText);
+    } catch {
+      throw new Error(
+        "Apps Script returned an invalid response. Check the Web App deployment."
       );
-
-
-    const j =
-      await r.json();
-
-
-    if (!j.success) {
-      throw Error(j.error);
     }
 
+    if (!result.success) {
+      throw new Error(
+        result.error || "Unable to add entry."
+      );
+    }
 
-    toast(
-      "✓ Entry added successfully"
-    );
-
+    toast("✓ Entry added successfully");
 
     e.target.reset();
-
     setDefaultDate();
 
     await fetchData();
-
-
   } catch (err) {
-
-    console.error(err);
-
+    console.error("Entry submission error:", err);
 
     $("formError").textContent =
-      "Failed to add entry.";
-
+      err.message || "Failed to add entry.";
 
     toast(
       "✕ Failed to add entry",
       "error"
     );
-
-
   } finally {
-
     $("submitBtn").disabled = false;
-
     $("submitBtn").innerHTML =
       "<span>+</span> Add Entry";
-
   }
-
 }
-
 
 /* =========================================================
    ESCAPE HTML

@@ -1,42 +1,457 @@
-const CONFIG={SHEET_NAME:"",HEADER_ROW:1};
+const CONFIG = {
+  SHEET_NAME: "",
+  HEADER_ROW: 1
+};
 
-function doGet(){
-  try{
-    const s=getSheet_(),v=s.getDataRange().getValues();
-    if(!v.length)return out_({success:true,data:[]});
-    const h=v[CONFIG.HEADER_ROW-1].map(norm_),rows=v.slice(CONFIG.HEADER_ROW).filter(r=>r.some(x=>String(x??"").trim()!==""));
-    return out_({success:true,data:normalize_(h,rows)});
-  }catch(e){console.error(e);return out_({success:false,error:"Unable to read Google Sheet"});}
+
+// Read all sheet data.
+function doGet() {
+  try {
+    const sheet = getSheet_();
+    const values = sheet.getDataRange().getValues();
+
+    if (!values.length) {
+      return out_({
+        success: true,
+        data: []
+      });
+    }
+
+    const headers = values[CONFIG.HEADER_ROW - 1].map(norm_);
+
+    const rows = values
+      .slice(CONFIG.HEADER_ROW)
+      .filter(row =>
+        row.some(cell =>
+          String(cell ?? "").trim() !== ""
+        )
+      );
+
+    return out_({
+      success: true,
+      data: normalize_(headers, rows)
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return out_({
+      success: false,
+      error: error.message || "Unable to read Google Sheet"
+    });
+  }
 }
-function doPost(e){
- try{
-  const p=JSON.parse(e.postData.contents||"{}"),req=["date","billNo","salesman","particulars","itemDetails","unit"];
-  req.forEach(k=>{if(!val_(p[k]))throw Error("Missing required field: "+k)});
-  const qty=Number(p.qty),price=Number(p.price);if(!isFinite(qty)||qty<=0)throw Error("Qty must be greater than zero.");if(!isFinite(price)||price<0)throw Error("Price must be zero or greater.");
-  const s=getSheet_(),map=headerMap_(s),row=new Array(s.getLastColumn()).fill("");
-  put_(row,map,["date"],p.date);put_(row,map,["billno"],p.billNo);put_(row,map,["salesman"],p.salesman);put_(row,map,["particulars","customer"],p.particulars);
-  put_(row,map,["itemdetails","itemdetail"],p.itemDetails);put_(row,map,["alias"],p.alias||"");put_(row,map,["materialcentre","materialcenter"],p.materialCentre||"");
-  put_(row,map,["qty","quantity"],qty);put_(row,map,["unit"],p.unit);put_(row,map,["price"],price);put_(row,map,["amount"],qty*price);
-  s.appendRow(row);return out_({success:true,message:"Entry added successfully",amount:qty*price});
- }catch(e){console.error(e);return out_({success:false,error:e.message||"Unable to add entry"});}
+
+
+// Add a new entry to the sheet.
+function doPost(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      throw new Error("No POST data received.");
+    }
+
+    const data = JSON.parse(e.postData.contents || "{}");
+
+    const requiredFields = [
+      "date",
+      "salesman",
+      "particulars",
+      "itemDetails",
+      "unit"
+    ];
+
+    requiredFields.forEach(field => {
+      if (!val_(data[field])) {
+        throw new Error("Missing required field: " + field);
+      }
+    });
+
+    const qty = Number(data.qty);
+
+    if (!isFinite(qty) || qty <= 0) {
+      throw new Error("Qty must be greater than zero.");
+    }
+
+    const price = Number(data.price);
+
+    if (!isFinite(price) || price < 0) {
+      throw new Error("Price must be zero or greater.");
+    }
+
+    const amount = qty * price;
+
+    const sheet = getSheet_();
+    const map = headerMap_(sheet);
+
+    const row = new Array(sheet.getLastColumn()).fill("");
+
+    put_(row, map, ["date"], data.date);
+
+    putOptional_(
+      row,
+      map,
+      ["billno", "vchbillno", "voucherno", "billnumber"],
+      data.billNo || ""
+    );
+
+    put_(row, map, ["salesman"], data.salesman);
+
+    put_(
+      row,
+      map,
+      ["particulars", "customer", "particularscustomer"],
+      data.particulars
+    );
+
+    put_(
+      row,
+      map,
+      ["itemdetails", "itemdetail"],
+      data.itemDetails
+    );
+
+    putOptional_(
+      row,
+      map,
+      ["alias"],
+      data.alias || ""
+    );
+
+    putOptional_(
+      row,
+      map,
+      ["materialcentre", "materialcenter"],
+      data.materialCentre || ""
+    );
+
+    put_(
+      row,
+      map,
+      ["qty", "quantity"],
+      qty
+    );
+
+    put_(
+      row,
+      map,
+      ["unit"],
+      data.unit
+    );
+
+    put_(
+      row,
+      map,
+      ["price"],
+      price
+    );
+
+    put_(
+      row,
+      map,
+      ["amount", "totalamount"],
+      amount
+    );
+
+    sheet.appendRow(row);
+
+    return out_({
+      success: true,
+      message: "Entry added successfully",
+      amount: amount
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return out_({
+      success: false,
+      error: error.message || "Unable to add entry"
+    });
+  }
 }
-function getSheet_(){const ss=SpreadsheetApp.getActiveSpreadsheet();if(!ss)throw Error("No spreadsheet");if(CONFIG.SHEET_NAME){const s=ss.getSheetByName(CONFIG.SHEET_NAME);if(!s)throw Error("Sheet not found");return s}return ss.getSheets()[0]}
-function normalize_(h,rows){let c={date:"",billNo:"",salesman:"",particulars:"",materialCentre:""};return rows.map(r=>{let x={};h.forEach((k,i)=>x[k]=r[i]);if(val_(x.date))c.date=fmt_(x.date);if(val_(x.billno))c.billNo=String(x.billno);if(val_(x.salesman))c.salesman=String(x.salesman);if(val_(x.particulars||x.customer))c.particulars=String(x.particulars||x.customer);if(val_(x.materialcentre||x.materialcenter))c.materialCentre=String(x.materialcentre||x.materialcenter);return{date:c.date,billNo:c.billNo,salesman:c.salesman,particulars:c.particulars,itemDetails:str_(x.itemdetails||x.itemdetail),alias:str_(x.alias),materialCentre:c.materialCentre,qty:num_(x.qty||x.quantity),unit:str_(x.unit),price:num_(x.price),amount:num_(x.amount)}})}
-function headerMap_(s){let h=s.getRange(CONFIG.HEADER_ROW,1,1,s.getLastColumn()).getValues()[0].map(norm_),m={};h.forEach((x,i)=>{if(x)m[x]=i+1});return m}
-function put_(r,m,n,v){for(const k of n)if(m[k]){r[m[k]-1]=v;return}throw Error("Missing Sheet column: "+n[0])}
-function norm_(x){return String(x??"").toLowerCase().trim().replace(/[\/_\-().]/g,"").replace(/\s+/g,"")}
-function val_(x){return x!==null&&x!==undefined&&String(x).trim()!==""}
-function str_(x){return x==null?"":String(x)}
-function num_(x){const n=Number(String(x??"").replace(/,/g,""));return isFinite(n)?n:0}
-function fmt_(x){return Object.prototype.toString.call(x)==="[object Date]"&&!isNaN(x)?Utilities.formatDate(x,Session.getScriptTimeZone(),"dd-MM-yyyy"):String(x??"")}
-function out_(x){return ContentService.createTextOutput(JSON.stringify(x)).setMimeType(ContentService.MimeType.JSON)}
 
 
+// Get the configured Google Sheet.
+function getSheet_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+
+  if (!spreadsheet) {
+    throw new Error("No spreadsheet found.");
+  }
+
+  if (CONFIG.SHEET_NAME) {
+    const sheet = spreadsheet.getSheetByName(CONFIG.SHEET_NAME);
+
+    if (!sheet) {
+      throw new Error(
+        "Sheet not found: " + CONFIG.SHEET_NAME
+      );
+    }
+
+    return sheet;
+  }
+
+  const sheets = spreadsheet.getSheets();
+
+  if (!sheets.length) {
+    throw new Error("No sheets found.");
+  }
+
+  return sheets[0];
+}
 
 
+// Convert sheet rows into API objects.
+function normalize_(headers, rows) {
+  return rows.map(row => {
+    const values = {};
+
+    headers.forEach((header, index) => {
+      if (header && !Object.prototype.hasOwnProperty.call(values, header)) {
+        values[header] = row[index];
+      }
+    });
+
+    return {
+      date: formatDate_(
+        getValue_(values, ["date"])
+      ),
+
+      billNo: string_(
+        getValue_(
+          values,
+          [
+            "billno",
+            "vchbillno",
+            "voucherno",
+            "billnumber"
+          ]
+        )
+      ),
+
+      salesman: string_(
+        getValue_(values, ["salesman"])
+      ),
+
+      particulars: string_(
+        getValue_(
+          values,
+          [
+            "particulars",
+            "customer",
+            "particularscustomer"
+          ]
+        )
+      ),
+
+      itemDetails: string_(
+        getValue_(
+          values,
+          [
+            "itemdetails",
+            "itemdetail"
+          ]
+        )
+      ),
+
+      alias: string_(
+        getValue_(values, ["alias"])
+      ),
+
+      materialCentre: string_(
+        getValue_(
+          values,
+          [
+            "materialcentre",
+            "materialcenter"
+          ]
+        )
+      ),
+
+      qty: number_(
+        getValue_(
+          values,
+          [
+            "qty",
+            "quantity"
+          ]
+        )
+      ),
+
+      unit: string_(
+        getValue_(values, ["unit"])
+      ),
+
+      price: number_(
+        getValue_(values, ["price"])
+      ),
+
+      amount: number_(
+        getValue_(
+          values,
+          [
+            "amount",
+            "totalamount"
+          ]
+        )
+      )
+    };
+  });
+}
 
 
-AKfycbw1M5DyohSY0l2AgrXKKX8JdVGUdVIa2EabOTIf1uTkDBeo6qjxbb2LBLlgD6-IxhMg
+// Create a map of sheet headers.
+function headerMap_(sheet) {
+  const headers = sheet
+    .getRange(
+      CONFIG.HEADER_ROW,
+      1,
+      1,
+      sheet.getLastColumn()
+    )
+    .getValues()[0];
 
-URl https://script.google.com/macros/s/AKfycbw1M5DyohSY0l2AgrXKKX8JdVGUdVIa2EabOTIf1uTkDBeo6qjxbb2LBLlgD6-IxhMg/exec
+  const map = {};
 
+  headers.forEach((header, index) => {
+    const normalized = norm_(header);
+
+    if (
+      normalized &&
+      !Object.prototype.hasOwnProperty.call(map, normalized)
+    ) {
+      map[normalized] = index + 1;
+    }
+  });
+
+  console.log(
+    "Detected Sheet Headers: " +
+    JSON.stringify(map)
+  );
+
+  return map;
+}
+
+
+// Write a required value into the matching column.
+function put_(row, map, names, value) {
+  for (const name of names) {
+    const normalized = norm_(name);
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        map,
+        normalized
+      )
+    ) {
+      row[map[normalized] - 1] = value;
+      return;
+    }
+  }
+
+  throw new Error(
+    "Missing Sheet column: " + names[0]
+  );
+}
+
+
+// Write a value only when the column exists.
+function putOptional_(row, map, names, value) {
+  for (const name of names) {
+    const normalized = norm_(name);
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        map,
+        normalized
+      )
+    ) {
+      row[map[normalized] - 1] = value;
+      return;
+    }
+  }
+}
+
+
+// Get a value using possible header names.
+function getValue_(object, names) {
+  for (const name of names) {
+    const normalized = norm_(name);
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        object,
+        normalized
+      )
+    ) {
+      return object[normalized];
+    }
+  }
+
+  return "";
+}
+
+
+// Normalize a header name.
+function norm_(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+
+// Check whether a value exists.
+function val_(value) {
+  return (
+    value !== null &&
+    value !== undefined &&
+    String(value).trim() !== ""
+  );
+}
+
+
+// Convert a value to text.
+function string_(value) {
+  return value == null
+    ? ""
+    : String(value);
+}
+
+
+// Convert a value to a number.
+function number_(value) {
+  const number = Number(
+    String(value ?? "").replace(/,/g, "")
+  );
+
+  return isFinite(number) ? number : 0;
+}
+
+
+// Format Google Sheet dates.
+function formatDate_(value) {
+  if (
+    Object.prototype.toString.call(value) ===
+      "[object Date]" &&
+    !isNaN(value)
+  ) {
+    return Utilities.formatDate(
+      value,
+      Session.getScriptTimeZone(),
+      "dd-MM-yyyy"
+    );
+  }
+
+  return String(value ?? "");
+}
+
+
+// Return a JSON response.
+function out_(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(
+      ContentService.MimeType.JSON
+    );
+}
