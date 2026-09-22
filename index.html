@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales / Dispatch Register</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="truck">🚚</div>
+    <div>
+      <h1>Sales / Dispatch Register</h1>
+      <p>Live data from Google Sheets</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <div class="updated">⟳ &nbsp; Last updated: <span id="lastUpdated">21 Jul 2026, 11:45 AM</span></div>
+    <button id="refreshBtn" class="refresh">⟳ &nbsp; Refresh</button>
+  </div>
+</header>
+
+<main>
+  <section class="filterbar">
+    <div class="searchbox"><span>⌕</span><input id="searchInput" placeholder="Search by Customer / Particulars or Item Details..."></div>
+    <select id="salesmanFilter"><option value="">All Salesman</option></select>
+    <select id="materialFilter"><option value="">All Material Centre</option></select>
+    <label>From Date<input id="fromDate" type="date"></label>
+    <label>To Date<input id="toDate" type="date"></label>
+    <button id="applyBtn" class="apply">Apply</button>
+    <button id="clearBtn" class="clear">Clear</button>
+  </section>
+  <div id="dateError" class="error"></div>
+
+  <section class="top-grid">
+    <div class="panel summary">
+      <h2>▥ &nbsp; Salesman-wise Summary</h2>
+      <table>
+        <thead><tr><th>Salesman</th><th>Total Qty</th><th>Total Amount</th></tr></thead>
+        <tbody id="summaryBody"></tbody>
+        <tfoot><tr><th>Total</th><th id="summaryQty">0</th><th id="summaryAmount">0</th></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="panel chart-panel">
+      <h2>▣ &nbsp; Total Amount by Salesman</h2>
+      <div class="chart-box"><canvas id="salesChart"></canvas></div>
+    </div>
+
+    <div class="panel add-panel">
+      <h2><span class="plus">+</span> Add New Entry</h2>
+      <form id="entryForm">
+        <div class="form-grid">
+          <label>Date<input name="date" type="date" required></label>
+          <label>Vch/Bill No<input name="billNo" placeholder="Enter bill no" required></label>
+          <label>Salesman<select name="salesman" id="entrySalesman" required><option value="">Select Salesman</option></select></label>
+          <label>Particulars / Customer<input name="particulars" placeholder="Enter customer name" required></label>
+          <label>Item Details<input name="itemDetails" placeholder="Enter item details" required></label>
+          <label>Alias (Optional)<input name="alias" placeholder="Enter alias"></label>
+          <label>Material Centre<select name="materialCentre" id="entryMaterial"><option value="">Select Centre</option></select></label>
+          <label>Qty<input name="qty" type="number" min="0.01" step="any" value="0" required></label>
+          <label>Unit<select name="unit" required><option value="">Select Unit</option><option>Bag</option><option>Kg</option><option>Pcs</option><option>Truck</option><option>Carton</option></select></label>
+          <label>Price<input name="price" type="number" min="0" step="0.01" value="0.00" required></label>
+        </div>
+        <button class="add-entry" id="submitBtn" type="submit">Add Entry</button>
+        <div id="formError" class="error"></div>
+      </form>
+    </div>
+  </section>
+
+  <section class="panel records">
+    <h2>▤ &nbsp; Sales / Dispatch Records</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th data-sort="date">Date ↕</th><th data-sort="billNo">Vch/Bill No ↕</th>
+          <th data-sort="salesman">Salesman ↕</th><th>Particulars / Customer ↕</th><th>Item Details ↕</th>
+          <th>Alias ↕</th><th>Material Centre ↕</th><th data-sort="qty">Qty ↕</th><th>Unit ↕</th>
+          <th data-sort="price">Price ↕</th><th data-sort="amount">Amount ↕</th>
+        </tr></thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyState" class="empty">No records found. Try changing your search or filters.</div>
+    <div class="pagination-row">
+      <span id="showing">Showing 0 of 0 records</span>
+      <div class="pages"><button id="prev">‹</button><span id="pageNumbers"></span><button id="next">›</button></div>
+    </div>
+  </section>
+</main>
+
+<div id="toast"></div>
+<script src="script.js"></script>
+</body>
+</html>
