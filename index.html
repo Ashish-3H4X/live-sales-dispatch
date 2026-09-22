@@ -1,97 +1,782 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sales / Dispatch Register</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Sales / Dispatch Register</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
-<header class="topbar">
-  <div class="brand">
-    <div class="truck">🚚</div>
-    <div>
-      <h1>Sales / Dispatch Register</h1>
-      <p>Live data from Google Sheets</p>
-    </div>
-  </div>
-  <div class="top-actions">
-    <div class="updated">⟳ &nbsp; Last updated: <span id="lastUpdated">21 Jul 2026, 11:45 AM</span></div>
-    <button id="refreshBtn" class="refresh">⟳ &nbsp; Refresh</button>
-  </div>
-</header>
 
-<main>
-  <section class="filterbar">
-    <div class="searchbox"><span>⌕</span><input id="searchInput" placeholder="Search by Customer / Particulars or Item Details..."></div>
-    <select id="salesmanFilter"><option value="">All Salesman</option></select>
-    <select id="materialFilter"><option value="">All Material Centre</option></select>
-    <label>From Date<input id="fromDate" type="date"></label>
-    <label>To Date<input id="toDate" type="date"></label>
-    <button id="applyBtn" class="apply">Apply</button>
-    <button id="clearBtn" class="clear">Clear</button>
-  </section>
-  <div id="dateError" class="error"></div>
+  <!-- ================= HEADER ================= -->
 
-  <section class="top-grid">
-    <div class="panel summary">
-      <h2>▥ &nbsp; Salesman-wise Summary</h2>
-      <table>
-        <thead><tr><th>Salesman</th><th>Total Qty</th><th>Total Amount</th></tr></thead>
-        <tbody id="summaryBody"></tbody>
-        <tfoot><tr><th>Total</th><th id="summaryQty">0</th><th id="summaryAmount">0</th></tr></tfoot>
-      </table>
-    </div>
+  <header class="topbar">
 
-    <div class="panel chart-panel">
-      <h2>▣ &nbsp; Total Amount by Salesman</h2>
-      <div class="chart-box"><canvas id="salesChart"></canvas></div>
+    <div class="brand">
+
+      <div class="brand-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M3 6.5L12 3L21 6.5V17.5L12 21L3 17.5V6.5Z"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M3.5 6.5L12 10L20.5 6.5"
+            stroke="currentColor"
+            stroke-width="1.8"
+          />
+          <path
+            d="M12 10V20.5"
+            stroke="currentColor"
+            stroke-width="1.8"
+          />
+        </svg>
+      </div>
+
+      <div class="brand-text">
+        <h1>Sales / Dispatch Register</h1>
+        <p>Live data from Google Sheets</p>
+      </div>
+
     </div>
 
-    <div class="panel add-panel">
-      <h2><span class="plus">+</span> Add New Entry</h2>
-      <form id="entryForm">
-        <div class="form-grid">
-          <label>Date<input name="date" type="date" required></label>
-          <label>Vch/Bill No<input name="billNo" placeholder="Enter bill no" required></label>
-          <label>Salesman<select name="salesman" id="entrySalesman" required><option value="">Select Salesman</option></select></label>
-          <label>Particulars / Customer<input name="particulars" placeholder="Enter customer name" required></label>
-          <label>Item Details<input name="itemDetails" placeholder="Enter item details" required></label>
-          <label>Alias (Optional)<input name="alias" placeholder="Enter alias"></label>
-          <label>Material Centre<select name="materialCentre" id="entryMaterial"><option value="">Select Centre</option></select></label>
-          <label>Qty<input name="qty" type="number" min="0.01" step="any" value="0" required></label>
-          <label>Unit<select name="unit" required><option value="">Select Unit</option><option>Bag</option><option>Kg</option><option>Pcs</option><option>Truck</option><option>Carton</option></select></label>
-          <label>Price<input name="price" type="number" min="0" step="0.01" value="0.00" required></label>
+
+    <div class="top-actions">
+
+      <div class="updated">
+
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9"
+                  stroke="currentColor"
+                  stroke-width="1.8"/>
+          <path d="M12 7V12L15 14"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"/>
+        </svg>
+
+        <span>
+          Last updated:
+          <strong id="lastUpdated">21 Jul 2026, 11:45 AM</strong>
+        </span>
+
+      </div>
+
+      <button id="refreshBtn" class="refresh">
+
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M20 11A8 8 0 0 0 6.2 5.4L4 8"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            d="M4 4V8H8"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M4 13A8 8 0 0 0 17.8 18.6L20 16"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            d="M20 20V16H16"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+
+        Refresh
+
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main class="dashboard-container">
+
+    <!-- ================= FILTER BAR ================= -->
+
+    <section class="filterbar">
+
+      <div class="searchbox">
+
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <circle
+            cx="11"
+            cy="11"
+            r="7"
+            stroke="currentColor"
+            stroke-width="2"
+          />
+          <path
+            d="M20 20L16.2 16.2"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+
+        <input
+          id="searchInput"
+          type="text"
+          placeholder="Search by Customer / Particulars or Item Details..."
+        >
+
+      </div>
+
+
+      <div class="filter-control">
+
+        <select id="salesmanFilter">
+          <option value="">All Salesman</option>
+        </select>
+
+      </div>
+
+
+      <div class="filter-control">
+
+        <select id="materialFilter">
+          <option value="">All Material Centre</option>
+        </select>
+
+      </div>
+
+
+      <label class="date-filter">
+
+        <span>From Date</span>
+
+        <div class="date-input">
+
+          <input id="fromDate" type="date">
+
         </div>
-        <button class="add-entry" id="submitBtn" type="submit">Add Entry</button>
-        <div id="formError" class="error"></div>
-      </form>
-    </div>
-  </section>
 
-  <section class="panel records">
-    <h2>▤ &nbsp; Sales / Dispatch Records</h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>#</th><th data-sort="date">Date ↕</th><th data-sort="billNo">Vch/Bill No ↕</th>
-          <th data-sort="salesman">Salesman ↕</th><th>Particulars / Customer ↕</th><th>Item Details ↕</th>
-          <th>Alias ↕</th><th>Material Centre ↕</th><th data-sort="qty">Qty ↕</th><th>Unit ↕</th>
-          <th data-sort="price">Price ↕</th><th data-sort="amount">Amount ↕</th>
-        </tr></thead>
-        <tbody id="recordsBody"></tbody>
-      </table>
-    </div>
-    <div id="emptyState" class="empty">No records found. Try changing your search or filters.</div>
-    <div class="pagination-row">
-      <span id="showing">Showing 0 of 0 records</span>
-      <div class="pages"><button id="prev">‹</button><span id="pageNumbers"></span><button id="next">›</button></div>
-    </div>
-  </section>
-</main>
+      </label>
 
-<div id="toast"></div>
-<script src="script.js"></script>
+
+      <label class="date-filter">
+
+        <span>To Date</span>
+
+        <div class="date-input">
+
+          <input id="toDate" type="date">
+
+        </div>
+
+      </label>
+
+
+      <button id="applyBtn" class="apply">
+
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M5 12L10 17L20 7"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+
+        Apply
+
+      </button>
+
+
+      <button id="clearBtn" class="clear">
+        Clear
+      </button>
+
+    </section>
+
+
+    <div id="dateError" class="error"></div>
+
+
+    <!-- ================= KPI CARDS ================= -->
+
+    <section class="stats-grid">
+
+      <!-- Quantity -->
+
+      <div class="stat-card quantity-card">
+
+        <div class="stat-icon">
+
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M4 7.5L12 3L20 7.5V16.5L12 21L4 16.5V7.5Z"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+            <path
+              d="M4.5 7.5L12 12L19.5 7.5"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+            <path
+              d="M12 12V20.5"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+          </svg>
+
+        </div>
+
+        <div class="stat-content">
+
+          <span>Total Quantity</span>
+
+          <strong id="totalQuantity">
+            2,251.09
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <!-- Amount -->
+
+      <div class="stat-card amount-card">
+
+        <div class="stat-icon">
+
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 3V21"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <path
+              d="M16 7.5C16 5.8 14.2 5 12 5C9.8 5 8 6 8 8C8 10 9.5 10.8 12 11.5C14.5 12.2 16 13 16 15.5C16 17.7 14.2 19 12 19C9.8 19 8 18.2 8 16.5"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+
+        </div>
+
+        <div class="stat-content">
+
+          <span>Total Amount</span>
+
+          <strong id="totalAmount">
+            ₹62,31,640.00
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <!-- Salesman -->
+
+      <div class="stat-card salesman-card">
+
+        <div class="stat-icon">
+
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="9"
+              cy="8"
+              r="3"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+
+            <circle
+              cx="17"
+              cy="9"
+              r="2.3"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+
+            <path
+              d="M3.5 19C3.8 15.7 5.8 14 9 14C12.2 14 14.2 15.7 14.5 19"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+
+            <path
+              d="M14.5 14.7C16.8 14.2 19.5 15.4 20 18.5"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+
+        </div>
+
+        <div class="stat-content">
+
+          <span>Total Salesmen</span>
+
+          <strong id="totalSalesmen">
+            10
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <!-- Records -->
+
+      <div class="stat-card records-card">
+
+        <div class="stat-icon">
+
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M6 3H18C19.1 3 20 3.9 20 5V19C20 20.1 19.1 21 18 21H6C4.9 21 4 20.1 4 19V5C4 3.9 4.9 3 6 3Z"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+
+            <path
+              d="M8 8H16M8 12H16M8 16H13"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+
+        </div>
+
+        <div class="stat-content">
+
+          <span>Total Records</span>
+
+          <strong id="totalRecords">
+            —
+          </strong>
+
+          <small>From current data</small>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= DASHBOARD GRID ================= -->
+
+    <section class="top-grid">
+
+
+      <!-- SALES SUMMARY -->
+
+      <div class="panel summary">
+
+        <div class="panel-header">
+
+          <div>
+
+            <h2>
+              <span class="section-icon">▥</span>
+              Salesman-wise Summary
+            </h2>
+
+          </div>
+
+        </div>
+
+
+        <div class="summary-table-wrap">
+
+          <table>
+
+            <thead>
+
+              <tr>
+                <th>Salesman</th>
+                <th>Total Qty</th>
+                <th>Total Amount</th>
+              </tr>
+
+            </thead>
+
+            <tbody id="summaryBody"></tbody>
+
+            <tfoot>
+
+              <tr>
+                <th>Total</th>
+                <th id="summaryQty">0</th>
+                <th id="summaryAmount">0</th>
+              </tr>
+
+            </tfoot>
+
+          </table>
+
+        </div>
+
+      </div>
+
+
+      <!-- CHART -->
+
+      <div class="panel chart-panel">
+
+        <div class="panel-header">
+
+          <h2>
+            <span class="section-icon">▥</span>
+            Total Amount by Salesman
+          </h2>
+
+        </div>
+
+        <div class="chart-box">
+
+          <canvas id="salesChart"></canvas>
+
+        </div>
+
+      </div>
+
+
+      <!-- ADD ENTRY -->
+
+      <div class="panel add-panel">
+
+        <div class="panel-header add-header">
+
+          <h2>
+            <span class="add-icon">+</span>
+            Add New Entry
+          </h2>
+
+        </div>
+
+
+        <form id="entryForm">
+
+          <div class="form-grid">
+
+            <label>
+              Date
+              <input
+                name="date"
+                type="date"
+                required
+              >
+            </label>
+
+
+            <label>
+              Vch/Bill No
+              <input
+                name="billNo"
+                placeholder="Enter bill no"
+                required
+              >
+            </label>
+
+
+            <label>
+              Salesman
+
+              <select
+                name="salesman"
+                id="entrySalesman"
+                required
+              >
+
+                <option value="">
+                  Select Salesman
+                </option>
+
+              </select>
+
+            </label>
+
+
+            <label>
+              Particulars / Customer
+
+              <input
+                name="particulars"
+                placeholder="Enter customer name"
+                required
+              >
+
+            </label>
+
+
+            <label>
+              Item Details
+
+              <input
+                name="itemDetails"
+                placeholder="Enter item details"
+                required
+              >
+
+            </label>
+
+
+            <label>
+              Alias (Optional)
+
+              <input
+                name="alias"
+                placeholder="Enter alias"
+              >
+
+            </label>
+
+
+            <label>
+              Material Centre
+
+              <select
+                name="materialCentre"
+                id="entryMaterial"
+              >
+
+                <option value="">
+                  Select Centre
+                </option>
+
+              </select>
+
+            </label>
+
+
+            <label>
+              Qty
+
+              <input
+                name="qty"
+                type="number"
+                min="0.01"
+                step="any"
+                value="0"
+                required
+              >
+
+            </label>
+
+
+            <label>
+              Unit
+
+              <select name="unit" required>
+
+                <option value="">
+                  Select Unit
+                </option>
+
+                <option>Bag</option>
+                <option>Kg</option>
+                <option>Pcs</option>
+                <option>Truck</option>
+                <option>Carton</option>
+
+              </select>
+
+            </label>
+
+
+            <label>
+              Price
+
+              <input
+                name="price"
+                type="number"
+                min="0"
+                step="0.01"
+                value="0.00"
+                required
+              >
+
+            </label>
+
+          </div>
+
+
+          <button
+            class="add-entry"
+            id="submitBtn"
+            type="submit"
+          >
+
+            <span>+</span>
+            Add Entry
+
+          </button>
+
+
+          <div
+            id="formError"
+            class="error"
+          ></div>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= RECORDS ================= -->
+
+    <section class="panel records">
+
+      <div class="records-header">
+
+        <div>
+
+          <h2>
+            <span class="section-icon">▤</span>
+            Sales / Dispatch Records
+          </h2>
+
+          <p>
+            Complete sales and dispatch transaction history
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>#</th>
+
+              <th data-sort="date">
+                Date ↕
+              </th>
+
+              <th data-sort="billNo">
+                Vch/Bill No ↕
+              </th>
+
+              <th data-sort="salesman">
+                Salesman ↕
+              </th>
+
+              <th>
+                Particulars / Customer ↕
+              </th>
+
+              <th>
+                Item Details ↕
+              </th>
+
+              <th>
+                Alias ↕
+              </th>
+
+              <th>
+                Material Centre ↕
+              </th>
+
+              <th data-sort="qty">
+                Qty ↕
+              </th>
+
+              <th>
+                Unit ↕
+              </th>
+
+              <th data-sort="price">
+                Price ↕
+              </th>
+
+              <th data-sort="amount">
+                Amount ↕
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="recordsBody"></tbody>
+
+        </table>
+
+      </div>
+
+
+      <div
+        id="emptyState"
+        class="empty"
+      >
+        No records found. Try changing your search or filters.
+      </div>
+
+
+      <div class="pagination-row">
+
+        <span id="showing">
+          Showing 0 of 0 records
+        </span>
+
+
+        <div class="pages">
+
+          <button id="prev">
+            ‹
+          </button>
+
+          <span id="pageNumbers"></span>
+
+          <button id="next">
+            ›
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- Toast -->
+
+  <div id="toast"></div>
+
+
+  <script src="script.js"></script>
+
 </body>
 </html>
